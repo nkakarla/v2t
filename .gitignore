@@ -1,0 +1,15 @@
+# private inputs / generated output (screen recordings contain subscriber content)
+*.MOV
+*.mov
+*.mp4
+out/
+
+# build products (V2T.exe is >100 MB: shipped to eperf4 by deploy_eperf4.sh, not via git)
+dist/
+build/
+vendor/
+web/downloads/*
+!web/downloads/.gitkeep
+__pycache__/
+*.pyc
+desktop.ini
