@@ -1,0 +1,8 @@
+# eperf4 web converter (webapp.py). Tesseract itself comes from apt: tesseract-ocr
+flask
+gunicorn
+opencv-python-headless
+numpy
+pillow
+pytesseract
+reportlab

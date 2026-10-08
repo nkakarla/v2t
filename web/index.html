@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EPerf V2T – Download</title>
-<meta name="description" content="V2T turns phone screen recordings of scrolling articles into clean, searchable PDFs. Free Windows app from EPerf Labs.">
+<title>EPerf V2T – Screen recordings to PDF</title>
+<meta name="description" content="V2T turns phone screen recordings of scrolling articles into clean, searchable PDFs and text files. Free, in your browser or as a Windows app, from EPerf Labs.">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -95,6 +95,53 @@
   .copy:hover { background: #353535; }
   ul.clean { margin: 8px 0 0; padding-left: 18px; }
   ul.clean li { margin: 4px 0; }
+  /* converter */
+  .conv { padding: 22px; }
+  .conv h3 { margin-bottom: 14px; }
+  .drop {
+    display: grid; place-items: center; text-align: center; gap: 4px; cursor: pointer;
+    border: 2px dashed var(--border-strong); border-radius: 10px; background: var(--input);
+    padding: 30px 16px; transition: border-color .2s, background .2s;
+  }
+  .drop:hover, .drop:focus-visible, .drop.over { border-color: var(--brand); background: #101a2e; outline: none; }
+  .drop svg { width: 40px; height: 40px; color: var(--brand-hi); }
+  .drop .big { color: var(--fg); font-size: 17px; font-weight: 600; }
+  .drop .small { color: var(--muted); font-size: 13px; }
+  .file {
+    display: flex; align-items: center; gap: 10px; background: var(--input); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; color: var(--fg);
+  }
+  .file .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file .sz { color: var(--muted); font-size: 13px; flex: none; }
+  .x { background: none; border: 0; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; padding: 0 4px; }
+  .x:hover { color: var(--fg); }
+  .field { margin-top: 14px; }
+  .field label { display: block; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+  .field input[type=text] {
+    width: 100%; background: var(--input); color: var(--fg); border: 1px solid var(--border-strong);
+    border-radius: 8px; padding: 9px 11px; font: inherit;
+  }
+  .field input[type=text]:focus { outline: none; border-color: var(--brand); }
+  .check { display: flex; gap: 9px; align-items: flex-start; margin-top: 12px; color: var(--text); font-size: 14px; cursor: pointer; }
+  .check input { margin-top: 4px; accent-color: var(--brand); }
+  .btn[disabled] { opacity: .45; pointer-events: none; }
+  button.btn { border: 0; cursor: pointer; font-family: inherit; }
+  .conv .btn { margin-top: 16px; width: 100%; justify-content: center; }
+  .bar { height: 10px; background: var(--input); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 14px 0 8px; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--brand), var(--brand-hi)); transition: width .4s; }
+  .stage { color: var(--fg); }
+  .sub { color: var(--muted); font-size: 13px; }
+  .done-h { color: var(--pos); font-weight: 700; font-size: 18px; display: flex; gap: 8px; align-items: center; }
+  .dl-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  .dl-row .btn { font-size: 15px; padding: 11px 14px; }
+  .btn.ghost { background: #2a2a2a; border: 1px solid var(--border-strong); box-shadow: none; }
+  .btn.ghost:hover { background: #353535; }
+  .linkbtn { background: none; border: 0; color: var(--brand-hi); font: inherit; cursor: pointer; padding: 0; text-decoration: underline; margin-top: 14px; }
+  .errbox { border-left: 4px solid #e66767; background: #2a1a1a; color: #f2c4c4; border-radius: 8px; padding: 10px 12px; margin-top: 4px; }
+  [hidden] { display: none !important; }
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 28px; align-items: center; }
+  .app > * { min-width: 0; }
+
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .ok { color: var(--pos); font-weight: 600; }
 
@@ -104,12 +151,13 @@
     .hero { grid-template-columns: minmax(0, 1fr); padding-top: 28px; }
     kbd { white-space: normal; }
     h1 { font-size: 28px; }
-    .grid3, .two { grid-template-columns: minmax(0, 1fr); }
+    .grid3, .two, .app { grid-template-columns: minmax(0, 1fr); }
   }
   @media (max-width: 480px) {
     .badge { display: none; }
     .card { padding: 18px 16px; }
     .btn { width: 100%; justify-content: center; }
+    .dl-row { grid-template-columns: minmax(0, 1fr); }
   }
 </style>
 </head>
@@ -126,21 +174,105 @@
   <div class="hero">
     <div>
       <h1>Turn screen recordings into clean PDFs</h1>
-      <p class="lede">Record yourself scrolling through an article on your phone. V2T finds every screen of text,
-        stitches it together and gives you a readable, searchable PDF, or a PDF of the screenshots themselves.</p>
-      <a class="btn" id="dl" href="downloads/V2T.exe" download>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-        Download for Windows
-      </a>
-      <div class="meta" id="meta">V2T.exe · Windows 10 / 11 (64-bit) · free</div>
+      <p class="lede">Record yourself scrolling through an article on your phone, then upload the video here.
+        V2T finds every screen of text and stitches it together. You get a PDF with the text followed by the
+        screenshots, plus a plain text file you can copy from.</p>
+      <ul class="clean">
+        <li>Free. No account, no sign-up, no AI credits.</li>
+        <li>Works in any browser, including on your phone.</li>
+        <li>Your video and results are deleted from our server within an hour.</li>
+      </ul>
+      <p class="meta">Rather keep everything on your own computer? <a href="#windows">Get the Windows app</a>.</p>
     </div>
-    <img class="shot" src="assets/v2t-app.webp" width="1118" height="835"
-         alt="The V2T app after converting five screen recordings to PDF">
+
+    <div class="card conv" id="conv">
+      <!-- 1. pick a video -->
+      <form id="pick">
+        <h3>Convert a recording</h3>
+        <div class="drop" id="drop" role="button" tabindex="0" aria-label="Choose a screen recording">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          <span class="big">Drop a screen recording here</span>
+          <span class="small">or tap to choose a video · .mov or .mp4 · up to <span class="maxmb">300</span> MB</span>
+        </div>
+        <div class="file" id="file" hidden>
+          <span class="nm" id="fname"></span><span class="sz" id="fsize"></span>
+          <button class="x" type="button" id="unpick" aria-label="Remove video">×</button>
+        </div>
+        <input type="file" id="input" accept="video/*,.mov,.mp4,.m4v" hidden>
+        <div class="field">
+          <label for="title">Title at the top of the PDF (optional)</label>
+          <input type="text" id="title" maxlength="150" placeholder="e.g. Model Portfolio, Sept 25">
+        </div>
+        <label class="check"><input type="checkbox" id="trim" checked>
+          <span>Trim the phone's status bar and browser toolbar<br><span class="sub">Turn off if the recording isn't from a phone browser.</span></span></label>
+        <button class="btn" id="go" type="submit" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+          Convert to PDF
+        </button>
+      </form>
+
+      <!-- 2. uploading / converting -->
+      <div id="busy" hidden>
+        <h3 id="busy-name">Converting</h3>
+        <div class="bar"><i id="bar"></i></div>
+        <div class="stage" id="stage">Uploading…</div>
+        <div class="sub" id="busy-sub">Keep this page open until your files are ready.</div>
+      </div>
+
+      <!-- 3. results -->
+      <div id="done" hidden>
+        <div class="done-h"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Your files are ready</div>
+        <p class="sub" id="done-sub"></p>
+        <div class="dl-row">
+          <a class="btn" id="dl-pdf" href="#" download>PDF: text + screenshots</a>
+          <a class="btn ghost" id="dl-txt" href="#" download>Text file (.txt)</a>
+        </div>
+        <p class="sub" style="margin-top:12px">Download them now. They're deleted from the server after an hour.</p>
+        <button class="linkbtn" type="button" id="again">Convert another video</button>
+      </div>
+
+      <!-- 4. something went wrong -->
+      <div id="fail" hidden>
+        <h3>That didn't work</h3>
+        <div class="errbox" id="fail-msg"></div>
+        <button class="linkbtn" type="button" id="retry">Try again</button>
+      </div>
+    </div>
   </div>
 
   <section>
+    <h2>How it works</h2>
+    <div class="grid3">
+      <div class="card"><span class="step-n">1</span><h3>Record</h3>
+        <p>On your iPhone, start a screen recording and scroll steadily through the article. Stop when you reach the end.</p></div>
+      <div class="card"><span class="step-n">2</span><h3>Upload</h3>
+        <p>Drop the video in the box above, or tap it to pick from your Photos or files. Add a title if you like.</p></div>
+      <div class="card"><span class="step-n">3</span><h3>Download</h3>
+        <p>You get a <strong>PDF</strong> (the text, then each screenshot) and a <strong>.txt</strong> file. Download both before you leave the page.</p></div>
+    </div>
+  </section>
+
+  <section id="windows">
+    <h2>Windows app</h2>
+    <div class="card app">
+      <div>
+        <h3>Prefer to convert on your own PC?</h3>
+        <p>The Windows app does the same job without uploading anything. It works offline, handles many videos at once,
+          and can combine them into one PDF.</p>
+        <p style="margin-top:16px"><a class="btn" id="dl" href="downloads/V2T.exe" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          Download for Windows
+        </a></p>
+        <div class="meta" id="meta">V2T.exe · Windows 10 / 11 (64-bit) · free</div>
+      </div>
+      <img class="shot" src="assets/v2t-app.webp" width="1118" height="835" loading="lazy"
+           alt="The V2T app after converting five screen recordings to PDF">
+    </div>
+  </section>
+
+  <section>
     <div class="card warn">
-      <h3>Windows will warn you. That's expected.</h3>
+      <h3>Windows will warn you about the app. That's expected.</h3>
       <p>V2T isn't code-signed yet (signing certificates cost money, and this is a free tool), so Windows and your
         browser don't recognize it. The warnings below are the normal ones for any new, unsigned app. It only takes a
         few clicks, and you only have to do it once.</p>
@@ -168,30 +300,18 @@
     </div>
   </section>
 
-  <section>
-    <h2>How to use it</h2>
-    <div class="grid3">
-      <div class="card"><span class="step-n">1</span><h3>Record</h3>
-        <p>On your iPhone, start a screen recording and scroll steadily through the article. Copy the video to your PC.</p></div>
-      <div class="card"><span class="step-n">2</span><h3>Add</h3>
-        <p>Drag the videos onto V2T, or click <kbd>Add videos…</kbd>. You can add a whole folder at once.</p></div>
-      <div class="card"><span class="step-n">3</span><h3>Convert</h3>
-        <p>Pick <em>Text</em>, <em>Screenshots</em> or <em>Both</em>, then click <kbd>Convert to PDF</kbd>.
-          PDFs land in an <code>out</code> folder next to your videos.</p></div>
-    </div>
-  </section>
-
   <section class="two">
     <div class="card">
-      <h3>Private and free</h3>
+      <h3>Privacy</h3>
       <ul class="clean">
-        <li><span class="ok">Runs entirely on your PC.</span> Your videos are never uploaded anywhere.</li>
-        <li>Works offline. No account, no sign-up, no AI credits.</li>
-        <li>Text recognition (Tesseract OCR) is built in. Nothing else to install.</li>
+        <li><strong>On this page:</strong> your video is converted on the EPerf Labs server. The video is deleted as soon as
+          it's converted, and the PDF and text file within an hour. Nothing is shared or used for anything else.</li>
+        <li><strong>Windows app:</strong> <span class="ok">runs entirely on your PC.</span> Nothing is uploaded.</li>
+        <li>Text recognition is Tesseract OCR, not an AI service. No AI credits are used.</li>
       </ul>
     </div>
     <div class="card">
-      <h3>Check the download (optional)</h3>
+      <h3>Check the app download (optional)</h3>
       <p>To confirm your copy is exactly the one published here, open PowerShell in the download folder and run
         <code>Get-FileHash .\V2T.exe</code>. The result should match:</p>
       <div class="hash"><code id="sha">see downloads/latest.json</code><button class="copy" id="copy" type="button">Copy</button></div>
@@ -202,10 +322,11 @@
     <div class="card">
       <h3>Tips &amp; known limits</h3>
       <ul class="clean">
-        <li>Best with articles in light mode on a phone. Scroll smoothly, and pausing isn't needed.</li>
-        <li>Text mode reads English. Tables and images come through in <em>Screenshots</em> mode, not as text.</li>
+        <li>Best with articles in light mode on a phone. Scroll smoothly; pausing isn't needed.</li>
+        <li>Text recognition reads English. Tables and charts come through as screenshots in the PDF, not as text.</li>
         <li>OCR isn't perfect. Expect the odd typo, like “Al” for “AI”.</li>
-        <li>If your antivirus quarantines the file, that's a false alarm common to unsigned apps. Restore it or allow it.</li>
+        <li>Recordings up to 15 minutes and <span class="maxmb">300</span> MB. A 30-second recording takes about half a minute to convert.</li>
+        <li>If your antivirus quarantines the Windows app, that's a false alarm common to unsigned apps. Restore it or allow it.</li>
       </ul>
     </div>
   </section>
@@ -214,24 +335,138 @@
 <footer>© <span id="yr">2026</span> EPerf Labs · V2T</footer>
 
 <script>
-  document.getElementById("yr").textContent = new Date().getFullYear();
-  // release details are written by deploy_eperf4.sh alongside the exe
+  const $ = id => document.getElementById(id);
+  $("yr").textContent = new Date().getFullYear();
+
+  // ---------- Windows app release details (written by deploy_eperf4.sh) ----------
   fetch("downloads/latest.json", { cache: "no-store" })
     .then(r => r.ok ? r.json() : Promise.reject())
     .then(j => {
       const mb = (j.size / 1048576).toFixed(0);
-      document.getElementById("meta").textContent =
-        `V2T.exe · version ${j.version} · ${mb} MB · released ${j.date} · Windows 10 / 11 (64-bit)`;
-      document.getElementById("sha").textContent = j.sha256.toUpperCase();
+      $("meta").textContent = `V2T.exe · version ${j.version} · ${mb} MB · released ${j.date} · Windows 10 / 11 (64-bit)`;
+      $("sha").textContent = j.sha256.toUpperCase();
     })
     .catch(() => {});
-  document.getElementById("copy").addEventListener("click", e => {
-    const t = document.getElementById("sha").textContent;
-    navigator.clipboard?.writeText(t).then(() => {
+  $("copy").addEventListener("click", e => {
+    navigator.clipboard?.writeText($("sha").textContent).then(() => {
       e.target.textContent = "Copied";
       setTimeout(() => (e.target.textContent = "Copy"), 1500);
     });
   });
+
+  // ---------- converter ----------
+  let MAX_MB = 300, chosen = null, pollTimer = null;
+  const VIDEO = /\.(mov|mp4|m4v|webm|mkv|avi|3gp)$/i;
+  const store = {   // remembers the running job so a refresh picks it back up
+    get() { try { return sessionStorage.getItem("v2t-job"); } catch { return null; } },
+    set(v) { try { v ? sessionStorage.setItem("v2t-job", v) : sessionStorage.removeItem("v2t-job"); } catch {} },
+  };
+
+  fetch("api/health").then(r => r.json()).then(j => {
+    MAX_MB = j.max_mb || MAX_MB;
+    document.querySelectorAll(".maxmb").forEach(e => (e.textContent = MAX_MB));
+  }).catch(() => {});
+
+  function show(view) {
+    for (const v of ["pick", "busy", "done", "fail"]) $(v).hidden = v !== view;
+  }
+  function fail(msg) {
+    clearTimeout(pollTimer); store.set(null);
+    $("fail-msg").textContent = msg;
+    show("fail");
+  }
+  const fmtMB = b => b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+
+  function choose(f) {
+    if (!f) return;
+    if (!VIDEO.test(f.name) && !(f.type || "").startsWith("video/"))
+      return fail(`“${f.name}” isn't a video. Choose a screen recording (.mov or .mp4).`);
+    if (f.size > MAX_MB * 1048576) return fail(`“${f.name}” is ${fmtMB(f.size)}. The limit is ${MAX_MB} MB.`);
+    chosen = f;
+    $("fname").textContent = f.name; $("fsize").textContent = fmtMB(f.size);
+    $("file").hidden = false; $("drop").hidden = true; $("go").disabled = false;
+    show("pick");
+  }
+  function reset() {
+    chosen = null; $("input").value = "";
+    $("file").hidden = true; $("drop").hidden = false; $("go").disabled = true;
+    show("pick");
+  }
+
+  const drop = $("drop"), conv = $("conv");
+  drop.addEventListener("click", () => $("input").click());
+  drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("input").click(); } });
+  $("input").addEventListener("change", e => choose(e.target.files[0]));
+  $("unpick").addEventListener("click", reset);
+  $("again").addEventListener("click", () => { store.set(null); $("title").value = ""; reset(); });
+  $("retry").addEventListener("click", () => (chosen ? choose(chosen) : reset()));
+  // accept drops anywhere on the converter card; a drop that misses it shouldn't open the video in the tab
+  ["dragenter", "dragover"].forEach(t => conv.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+  conv.addEventListener("dragleave", e => { if (!conv.contains(e.relatedTarget)) drop.classList.remove("over"); });
+  conv.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); choose(e.dataTransfer.files[0]); });
+  window.addEventListener("dragover", e => e.preventDefault());
+  window.addEventListener("drop", e => e.preventDefault());
+
+  function progress(pct, stage, sub) {
+    $("bar").style.width = Math.max(2, pct) + "%";
+    if (stage) $("stage").textContent = stage;
+    if (sub !== undefined) $("busy-sub").textContent = sub;
+  }
+
+  $("pick").addEventListener("submit", e => {
+    e.preventDefault();
+    if (!chosen) return;
+    const fd = new FormData();
+    fd.append("video", chosen);
+    fd.append("title", $("title").value.trim());
+    fd.append("trim", $("trim").checked ? "1" : "0");
+    $("busy-name").textContent = chosen.name;
+    progress(0, "Uploading…", "Keep this page open until your files are ready.");
+    show("busy");
+
+    // XHR rather than fetch, for upload progress
+    const x = new XMLHttpRequest();
+    x.open("POST", "api/jobs");
+    x.upload.onprogress = ev => ev.lengthComputable &&
+      progress(25 * ev.loaded / ev.total, `Uploading… ${Math.round(100 * ev.loaded / ev.total)}%`);
+    x.onload = () => {
+      let j = {};
+      try { j = JSON.parse(x.responseText); } catch {}
+      if (x.status === 202 && j.id) { store.set(j.id); track(j); }
+      else fail(j.error || (x.status === 413 ? `That file is too big. The limit is ${MAX_MB} MB.`
+                                             : `Upload failed (error ${x.status}). Please try again.`));
+    };
+    x.onerror = () => fail("The upload didn't go through. Check your connection and try again.");
+    x.send(fd);
+  });
+
+  // the upload fills the first 25% of the bar, the server's own progress (0-100) the rest
+  function track(j) {
+    clearTimeout(pollTimer);
+    if (j.state === "done") return finish(j);
+    if (j.state === "error") return fail(j.error);
+    show("busy");
+    if (j.state === "queued")
+      progress(25, j.position > 1 ? `Waiting in line: ${j.position - 1} video${j.position > 2 ? "s" : ""} ahead of yours` : "Starting…");
+    else progress(25 + 0.75 * j.progress, j.stage + "…");
+    pollTimer = setTimeout(() => poll(j.id), 1000);
+  }
+  function poll(id, tries = 0) {
+    fetch(`api/jobs/${id}`, { cache: "no-store" })
+      .then(r => r.json().then(j => ({ ok: r.ok, j })))
+      .then(({ ok, j }) => (ok ? track(j) : fail(j.error || "This conversion has expired. Please upload the video again.")))
+      .catch(() => (tries < 20 ? (pollTimer = setTimeout(() => poll(id, tries + 1), 3000))
+                               : fail("Lost contact with the server. Check your connection and try again.")));
+  }
+  function finish(j) {
+    $("dl-pdf").href = j.files.pdf; $("dl-txt").href = j.files.txt;
+    $("done-sub").textContent = `${j.name}: ${j.screens} screen${j.screens === 1 ? "" : "s"} of text, ` +
+                                `${j.paragraphs} paragraph${j.paragraphs === 1 ? "" : "s"}.`;
+    show("done");
+  }
+
+  const resume = store.get();
+  if (resume) { $("busy-name").textContent = "Your video"; progress(25, "Checking…"); show("busy"); poll(resume); }
 </script>
 </body>
 </html>

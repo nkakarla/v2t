@@ -1,0 +1,21 @@
+[Unit]
+Description=V2T web converter (screen recordings to PDF + text, Flask/gunicorn, served at v2t.eperflabs.com/api)
+After=network.target
+
+[Service]
+Type=simple
+User=nash-mudi
+WorkingDirectory=/home/nash-mudi/Documents/projects/v2t
+Environment=V2T_DATA=/home/nash-mudi/.v2t
+# keep OCR from taking over every core on the box
+Environment=OMP_THREAD_LIMIT=4
+# One worker: jobs are kept in memory and converted one at a time on a background thread.
+ExecStart=/home/nash-mudi/Documents/projects/v2t/.venv/bin/gunicorn --workers 1 --threads 8 --timeout 120 --bind 127.0.0.1:8850 webapp:app
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

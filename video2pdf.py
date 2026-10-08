@@ -52,18 +52,20 @@ def _scroll_dy(prev, cur, win, change):
     return -dy if np.mean(np.abs(a - b)) <= change else None
 
 
-def extract_keyframes(path, fps=30.0, change=18.0, overlap=0.4, crop_top=0.0, crop_bottom=0.0):
+def extract_keyframes(path, fps=30.0, change=18.0, overlap=0.4, crop_top=0.0, crop_bottom=0.0, progress=None):
     """Keep a frame each time ~(1-overlap) of a screen of new content has scrolled in.
 
     Scroll offset is tracked with phase correlation, so continuous flick-scrolls
     work (screen recordings have no motion blur). Content that changes without
     scrolling (page switch) is caught when the shift-compensated diff exceeds `change`.
+    progress(frames_read, total_frames) is called every second of video.
     """
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
         raise RuntimeError(f"Cannot open {path}")
     src_fps = cap.get(cv2.CAP_PROP_FPS) or 30
     step = max(1, int(round(src_fps / fps)))
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
 
     kept, prev, win = [], None, None
     pos = kept_pos = 0.0   # current / last-kept scroll offset (small-frame px)
@@ -103,6 +105,8 @@ def extract_keyframes(path, fps=30.0, change=18.0, overlap=0.4, crop_top=0.0, cr
                         pending = frame
             prev = sg
         idx += 1
+        if progress and idx % max(1, int(src_fps)) == 0:
+            progress(idx, max(total, idx))
     cap.release()
     if pending is not None:  # tail of the scroll that never reached a full step
         kept.append(pending)
@@ -187,8 +191,29 @@ def frames_to_paragraphs(frames, log=print, progress=None):
     return lines_to_paragraphs(acc)
 
 
+def _screenshot_grid(frames, width, max_h=580, gap=12):
+    """Screenshots two to a row (phone screens are tall and narrow), as JPEGs to keep the PDF small."""
+    import io
+    from reportlab.platypus import Image as RLImage, Table, TableStyle
+    cw = (width - gap) / 2
+    cells = []
+    for f in frames:
+        h, w = f.shape[:2]
+        scale = min(cw / w, max_h / h)
+        ok, jpg = cv2.imencode(".jpg", f, [cv2.IMWRITE_JPEG_QUALITY, 82])
+        cells.append(RLImage(io.BytesIO(jpg.tobytes()), w * scale, h * scale))
+    if len(cells) % 2:
+        cells.append("")
+    rows = [cells[i:i + 2] for i in range(0, len(cells), 2)]
+    t = Table(rows, colWidths=[cw + gap / 2] * 2)
+    t.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                           ("BOTTOMPADDING", (0, 0), (-1, -1), gap)]))
+    return t
+
+
 def text_to_pdf(sections, out):
-    """sections: list of (title or None, paragraphs); each section after the first starts a new page."""
+    """sections: list of (title or None, paragraphs[, frames]); each section after the first starts
+    a new page. Frames, when given, follow the section's text as a "Screenshots" appendix."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
@@ -196,15 +221,24 @@ def text_to_pdf(sections, out):
 
     st = getSampleStyleSheet()
     body = st["BodyText"]; body.fontSize = 12; body.leading = 17
+    doc = SimpleDocTemplate(out, pagesize=letter, leftMargin=60, rightMargin=60)
     story = []
-    for n, (title, paras) in enumerate(sections):
+    for n, (title, paras, *rest) in enumerate(sections):
         if n:
             story.append(PageBreak())
         if title:
             story += [Paragraph(escape(title), st["Title"]), Spacer(1, 12)]
         for p in paras:
             story += [Paragraph(escape(p), body), Spacer(1, 8)]
-    SimpleDocTemplate(out, pagesize=letter, leftMargin=60, rightMargin=60).build(story)
+        if rest and rest[0]:
+            story += [PageBreak(), Paragraph("Screenshots", st["Heading2"]), Spacer(1, 6),
+                      _screenshot_grid(rest[0], doc.width)]
+    doc.build(story)
+
+
+def paragraphs_to_text(title, paras):
+    """Plain-text version of a section: optional title, then paragraphs separated by blank lines."""
+    return "\n\n".join(([title] if title else []) + list(paras)) + "\n"
 
 
 def find_tesseract():
@@ -234,7 +268,8 @@ def find_tesseract():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("video"); ap.add_argument("out")
-    ap.add_argument("--mode", choices=["text", "images"], default="text")
+    ap.add_argument("--mode", choices=["text", "images", "both"], default="text",
+                    help="both = text followed by the screenshots in one PDF, plus a .txt next to it")
     ap.add_argument("--fps", type=float, default=30.0, help="frames/sec analysed for scroll tracking")
     ap.add_argument("--change", type=float, default=18.0, help="diff left after undoing the scroll that counts as a page change")
     ap.add_argument("--overlap", type=float, default=0.4, help="screen fraction shared by consecutive kept frames")
@@ -252,7 +287,12 @@ def main():
         frames_to_image_pdf(frames, a.out)
     else:
         find_tesseract()
-        text_to_pdf([(a.title, frames_to_paragraphs(frames))], a.out)
+        paras = frames_to_paragraphs(frames)
+        text_to_pdf([(a.title, paras, frames if a.mode == "both" else None)], a.out)
+        if a.mode == "both":
+            import os
+            with open(os.path.splitext(a.out)[0] + ".txt", "w", encoding="utf-8") as fh:
+                fh.write(paragraphs_to_text(a.title, paras))
     print(f"Wrote {a.out}")
 
 
